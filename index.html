@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ICON | Catálogo de Stock</title>
+  <!-- Favicon (Icono de la pestaña) -->
   <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1MTXUyzpXlZ3_ZqjanHdG8RTrHTJm-MBh">
   <style>
     * { box-sizing: border-box; }
@@ -17,7 +18,7 @@
       min-height: 100vh;
     }
 
-    /* Marca de agua fija de fondo */
+    /* Marca de agua fija en el centro del fondo */
     body::before {
       content: "";
       position: fixed;
@@ -25,14 +26,14 @@
       left: 50%;
       transform: translate(-50%, -50%);
       width: 80vw;
-      max-width: 450px;
+      max-width: 420px;
       height: 80vw;
-      max-height: 450px;
+      max-height: 420px;
       background-image: url('https://lh3.googleusercontent.com/d/1MTXUyzpXlZ3_ZqjanHdG8RTrHTJm-MBh');
       background-repeat: no-repeat;
       background-position: center;
       background-size: contain;
-      opacity: 0.06;
+      opacity: 0.08;
       pointer-events: none;
       z-index: 0;
     }
@@ -94,7 +95,7 @@
       z-index: 1;
     }
     .card {
-      background: rgba(20, 20, 20, 0.85);
+      background: rgba(20, 20, 20, 0.88);
       backdrop-filter: blur(4px);
       border: 1px solid #222;
       border-radius: 12px;
@@ -147,33 +148,31 @@
       transition: background-color 0.2s;
     }
     .btn-ws:hover { background-color: #1ebd56; }
-    .loading { text-align: center; color: #888; margin-top: 40px; font-size: 1em; }
+    .loading { text-align: center; color: #888; margin-top: 40px; font-size: 1em; grid-column: 1 / -1; }
   </style>
 </head>
 <body>
 
   <header>
     <div class="logo-container">
-      <img src="https://lh3.googleusercontent.com/d/1MTXUyzpXlZ3_ZqjanHdG8RTrHTJm-MBh" alt="ICON Indumentaria & Accesorios" class="logo" onerror="this.style.display='none'; document.getElementById('alt-title').style.display='block';">
+      <!-- Logo Superior del Encabezado -->
+      <img src="https://lh3.googleusercontent.com/d/1_LgUzOOjiZpsB0xAQB_VwP06Qdctmv7R" alt="ICON Indumentaria & Accesorios" class="logo" onerror="this.style.display='none'; document.getElementById('alt-title').style.display='block';">
       <h1 id="alt-title" style="display:none; margin:0; letter-spacing:2px; font-size: 1.6em;">ICON</h1>
     </div>
     
     <nav>
-      <button class="nav-btn active" onclick="loadCategory('GORRAS', this)">Gorras</button>
-      <button class="nav-btn" onclick="loadCategory('REMERAS', this)">Remeras</button>
+      <button class="nav-btn active" id="btn-gorras" onclick="loadCategory('GORRAS')">Gorras</button>
+      <button class="nav-btn" id="btn-remeras" onclick="loadCategory('REMERAS')">Remeras</button>
     </nav>
   </header>
 
-  <div id="catalog" class="container">
-    <div class="loading">Cargando productos...</div>
-  </div>
+  <div id="catalog" class="container"></div>
 
   <script>
-    // URL actualizada de Google Apps Script
     var API_URL = 'https://script.google.com/macros/s/AKfycbx-GaEgu6_oVhr2rd-CchSSXYWOZkd_w2wWgGCaaTRHirHLeomdBYFKZTQ74sTVcX2YkQ/exec';
 
-    // Productos de tu planilla ICON STOCK
-    var fallbackData = {
+    // Lista real de productos extraída de tu planilla ICON STOCK
+    var stockData = {
       'GORRAS': [
         { modelo: 'GORRA NY NEGRA', precio: 81840, disponible: true },
         { modelo: 'GORRA P GRIS', precio: 78120, disponible: true },
@@ -193,48 +192,72 @@
       'REMERAS': []
     };
 
-    var currentCategory = 'GORRAS';
-    loadCategory(currentCategory);
-
-    function loadCategory(category, btnElement) {
-      currentCategory = category;
-      
-      if (btnElement) {
-        var buttons = document.querySelectorAll('.nav-btn');
-        buttons.forEach(function(b) { b.classList.remove('active'); });
-        btnElement.classList.add('active');
-      }
-
-      if (fallbackData[category] && fallbackData[category].length > 0) {
-        showCatalog(fallbackData[category]);
-      } else {
-        document.getElementById('catalog').innerHTML = '<div class="loading">Cargando ' + category.toLowerCase() + '...</div>';
-      }
-
-      var controller = new AbortController();
-      var timeoutId = setTimeout(function() { controller.abort(); }, 3000);
-
-      fetch(API_URL + '?category=' + encodeURIComponent(category), { signal: controller.signal })
-        .then(function(res) { return res.json(); })
-        .then(function(productos) {
-          clearTimeout(timeoutId);
-          if (productos && productos.length > 0) {
-            showCatalog(productos);
-          }
-        })
-        .catch(function(err) {
-          // Mantiene los productos visibles sin mostrar error
-        });
-    }
-
-    function showCatalog(productos) {
-      if (!productos || productos.length === 0) {
-        document.getElementById('catalog').innerHTML = '<div class="loading">No hay productos disponibles en esta categoría.</div>';
+    function renderProducts(lista) {
+      var container = document.getElementById('catalog');
+      if (!lista || lista.length === 0) {
+        container.innerHTML = '<div class="loading">No hay productos disponibles en esta categoría.</div>';
         return;
       }
 
       var html = '';
-      productos.forEach(function(p) {
+      for (var i = 0; i < lista.length; i++) {
+        var p = lista[i];
         var statusClass = p.disponible ? 'in-stock' : 'out-stock';
         var statusText = p.disponible ? 'Disponible' : 'Sin Stock';
-        var precioTexto
+        var precioTexto = p.precio ? '$' + Number(p.precio).toLocaleString('es-AR') : 'Consultar';
+        var wsLink = 'https://wa.me/5491123610813?text=' + encodeURIComponent('Hola! Me interesa ' + p.modelo);
+
+        html += '<div class="card">' +
+                  '<div>' +
+                    '<div class="title">' + p.modelo + '</div>' +
+                    '<div class="price">' + precioTexto + '</div>' +
+                    '<div class="status ' + statusClass + '">' + statusText + '</div>' +
+                  '</div>' +
+                  (p.disponible ? '<a href="' + wsLink + '" target="_blank" class="btn-ws">Pedir por WhatsApp</a>' : '') +
+                '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function loadCategory(cat) {
+      var btnG = document.getElementById('btn-gorras');
+      var btnR = document.getElementById('btn-remeras');
+
+      if (cat === 'GORRAS') {
+        btnG.classList.add('active');
+        btnR.classList.remove('active');
+      } else {
+        btnR.classList.add('active');
+        btnG.classList.remove('active');
+      }
+
+      // Renderizar productos de inmediato
+      renderProducts(stockData[cat] || []);
+
+      // Intentar actualizar en segundo plano vía JSONP
+      try {
+        var cbName = 'cb_' + Date.now();
+        window[cbName] = function(res) {
+          if (res && Array.isArray(res) && res.length > 0) {
+            stockData[cat] = res;
+            renderProducts(res);
+          }
+          delete window[cbName];
+          var s = document.getElementById(cbName);
+          if (s && s.parentNode) s.parentNode.removeChild(s);
+        };
+
+        var script = document.createElement('script');
+        script.id = cbName;
+        script.src = API_URL + '?category=' + encodeURIComponent(cat) + '&callback=' + cbName;
+        document.body.appendChild(script);
+      } catch (e) {
+        // En caso de fallo de red, se mantienen los productos renderizados
+      }
+    }
+
+    // Ejecución inicial automática
+    loadCategory('GORRAS');
+  </script>
+</body>
+</html>
