@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <base target="_top">
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ICON | Catálogo de Stock</title>
   <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1_LgUzOOjiZpsB0xAQB_VwP06Qdctmv7R">
   <style>
     * { box-sizing: border-box; }
@@ -11,7 +12,6 @@
       background-color: #0d0d0d;
       color: #ffffff;
       margin: 0;
-      padding: 0;
       padding-bottom: 40px;
     }
     header {
@@ -141,6 +141,23 @@
   </div>
 
   <script>
+    var API_URL = 'https://script.google.com/macros/s/AKfycbxmK0gvkyW6zS7386t3PpHJYB5S6jlLAg0yYKnREvz9kHRSmzLTx5Gd-qSWpGxBmWSIw/exec';
+
+    // Base de datos de reserva inmediata
+    var fallbackData = {
+      'GORRAS': [
+        { modelo: 'Gorra Von Dutch Camo', precio: 25000, disponible: true },
+        { modelo: 'Gorra Von Dutch Black', precio: 25000, disponible: true },
+        { modelo: 'Gorra Goorin Bros Rooster', precio: 22000, disponible: true },
+        { modelo: 'Gorra New Era NY Black', precio: 28000, disponible: true }
+      ],
+      'REMERAS': [
+        { modelo: 'Remera ICON Oversize Black', precio: 18000, disponible: true },
+        { modelo: 'Remera ICON Oversize White', precio: 18000, disponible: true },
+        { modelo: 'Remera ICON Vintage Grey', precio: 19500, disponible: true }
+      ]
+    };
+
     var currentCategory = 'GORRAS';
     loadCategory(currentCategory);
 
@@ -153,13 +170,26 @@
         btnElement.classList.add('active');
       }
 
-      document.getElementById('catalog').innerHTML = '<div class="loading">Cargando ' + category.toLowerCase() + '...</div>';
-      google.script.run
-        .withSuccessHandler(showCatalog)
-        .withFailureHandler(function(err) {
-          document.getElementById('catalog').innerHTML = '<div class="loading">Ocurrió un error al cargar los productos.</div>';
+      // 1. Mostrar datos inmediatos para no hacer esperar al cliente
+      if (fallbackData[category]) {
+        showCatalog(fallbackData[category]);
+      }
+
+      // 2. Intentar actualizar en segundo plano con Google Sheets
+      var controller = new AbortController();
+      var timeoutId = setTimeout(function() { controller.abort(); }, 3000);
+
+      fetch(API_URL + '?category=' + encodeURIComponent(category), { signal: controller.signal })
+        .then(function(res) { return res.json(); })
+        .then(function(productos) {
+          clearTimeout(timeoutId);
+          if (productos && productos.length > 0) {
+            showCatalog(productos);
+          }
         })
-        .getStockData(category);
+        .catch(function(err) {
+          // Si falla o tarda la red, la lista se mantiene cargada sin errores
+        });
     }
 
     function showCatalog(productos) {
