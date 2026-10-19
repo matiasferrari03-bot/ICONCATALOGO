@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ICON | Catálogo de Stock</title>
-  <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1_LgUzOOjiZpsB0xAQB_VwP06Qdctmv7R">
+  <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1MTXUyzpXlZ3_ZqjanHdG8RTrHTJm-MBh">
   <style>
     * { box-sizing: border-box; }
     body {
@@ -13,13 +13,38 @@
       color: #ffffff;
       margin: 0;
       padding-bottom: 40px;
+      position: relative;
+      min-height: 100vh;
     }
+
+    /* Marca de agua fija de fondo */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80vw;
+      max-width: 450px;
+      height: 80vw;
+      max-height: 450px;
+      background-image: url('https://lh3.googleusercontent.com/d/1MTXUyzpXlZ3_ZqjanHdG8RTrHTJm-MBh');
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      opacity: 0.06;
+      pointer-events: none;
+      z-index: 0;
+    }
+
     header {
       background-color: #000000;
       padding: 15px 10px 12px 10px;
       text-align: center;
       border-bottom: 1px solid #222;
       width: 100%;
+      position: relative;
+      z-index: 1;
     }
     .logo-container {
       width: 100%;
@@ -65,9 +90,12 @@
       max-width: 1000px;
       margin: 20px auto;
       padding: 0 15px;
+      position: relative;
+      z-index: 1;
     }
     .card {
-      background: #141414;
+      background: rgba(20, 20, 20, 0.85);
+      backdrop-filter: blur(4px);
       border: 1px solid #222;
       border-radius: 12px;
       padding: 14px;
@@ -126,7 +154,7 @@
 
   <header>
     <div class="logo-container">
-      <img src="https://lh3.googleusercontent.com/d/1_LgUzOOjiZpsB0xAQB_VwP06Qdctmv7R" alt="ICON Indumentaria & Accesorios" class="logo" onerror="this.style.display='none'; document.getElementById('alt-title').style.display='block';">
+      <img src="https://lh3.googleusercontent.com/d/1MTXUyzpXlZ3_ZqjanHdG8RTrHTJm-MBh" alt="ICON Indumentaria & Accesorios" class="logo" onerror="this.style.display='none'; document.getElementById('alt-title').style.display='block';">
       <h1 id="alt-title" style="display:none; margin:0; letter-spacing:2px; font-size: 1.6em;">ICON</h1>
     </div>
     
@@ -141,21 +169,28 @@
   </div>
 
   <script>
-    var API_URL = 'https://script.google.com/macros/s/AKfycbxmK0gvkyW6zS7386t3PpHJYB5S6jlLAg0yYKnREvz9kHRSmzLTx5Gd-qSWpGxBmWSIw/exec';
+    // URL actualizada de Google Apps Script
+    var API_URL = 'https://script.google.com/macros/s/AKfycbx-GaEgu6_oVhr2rd-CchSSXYWOZkd_w2wWgGCaaTRHirHLeomdBYFKZTQ74sTVcX2YkQ/exec';
 
-    // Base de datos de reserva inmediata
+    // Productos de tu planilla ICON STOCK
     var fallbackData = {
       'GORRAS': [
-        { modelo: 'Gorra Von Dutch Camo', precio: 25000, disponible: true },
-        { modelo: 'Gorra Von Dutch Black', precio: 25000, disponible: true },
-        { modelo: 'Gorra Goorin Bros Rooster', precio: 22000, disponible: true },
-        { modelo: 'Gorra New Era NY Black', precio: 28000, disponible: true }
+        { modelo: 'GORRA NY NEGRA', precio: 81840, disponible: true },
+        { modelo: 'GORRA P GRIS', precio: 78120, disponible: true },
+        { modelo: 'GORRA LA', precio: 74400, disponible: false },
+        { modelo: 'GORRA JORDAN FRANJA ROJA', precio: 74400, disponible: false },
+        { modelo: 'JORDAN CHAPITA', precio: 65100, disponible: false },
+        { modelo: 'JORDAN CLASICA', precio: 65100, disponible: false },
+        { modelo: 'CLUB NIKE', precio: 78120, disponible: false },
+        { modelo: 'NIKE B NEGRA', precio: 66960, disponible: false },
+        { modelo: 'WARRIORS NIKE', precio: 66960, disponible: false },
+        { modelo: 'JORDAN CLASICA PLANA', precio: 78120, disponible: false },
+        { modelo: 'GORRA CELTIC', precio: 66960, disponible: false },
+        { modelo: 'NIKE CHAPITA', precio: 65100, disponible: false },
+        { modelo: 'LOS ANGELES', precio: 81840, disponible: false },
+        { modelo: 'T ROJA', precio: 78120, disponible: false }
       ],
-      'REMERAS': [
-        { modelo: 'Remera ICON Oversize Black', precio: 18000, disponible: true },
-        { modelo: 'Remera ICON Oversize White', precio: 18000, disponible: true },
-        { modelo: 'Remera ICON Vintage Grey', precio: 19500, disponible: true }
-      ]
+      'REMERAS': []
     };
 
     var currentCategory = 'GORRAS';
@@ -170,12 +205,12 @@
         btnElement.classList.add('active');
       }
 
-      // 1. Mostrar datos inmediatos para no hacer esperar al cliente
-      if (fallbackData[category]) {
+      if (fallbackData[category] && fallbackData[category].length > 0) {
         showCatalog(fallbackData[category]);
+      } else {
+        document.getElementById('catalog').innerHTML = '<div class="loading">Cargando ' + category.toLowerCase() + '...</div>';
       }
 
-      // 2. Intentar actualizar en segundo plano con Google Sheets
       var controller = new AbortController();
       var timeoutId = setTimeout(function() { controller.abort(); }, 3000);
 
@@ -188,7 +223,7 @@
           }
         })
         .catch(function(err) {
-          // Si falla o tarda la red, la lista se mantiene cargada sin errores
+          // Mantiene los productos visibles sin mostrar error
         });
     }
 
@@ -202,20 +237,4 @@
       productos.forEach(function(p) {
         var statusClass = p.disponible ? 'in-stock' : 'out-stock';
         var statusText = p.disponible ? 'Disponible' : 'Sin Stock';
-        var precioTexto = p.precio ? '$' + Number(p.precio).toLocaleString('es-AR') : 'Consultar';
-        var wsLink = 'https://wa.me/5491123610813?text=' + encodeURIComponent('Hola! Me interesa ' + p.modelo);
-
-        html += '<div class="card">' +
-                  '<div>' +
-                    '<div class="title">' + p.modelo + '</div>' +
-                    '<div class="price">' + precioTexto + '</div>' +
-                    '<div class="status ' + statusClass + '">' + statusText + '</div>' +
-                  '</div>' +
-                  (p.disponible ? '<a href="' + wsLink + '" target="_blank" class="btn-ws">Pedir por WhatsApp</a>' : '') +
-                '</div>';
-      });
-      document.getElementById('catalog').innerHTML = html;
-    }
-  </script>
-</body>
-</html>
+        var precioTexto
