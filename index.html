@@ -17,6 +17,7 @@
       min-height: 100vh;
     }
 
+    /* Marca de agua fija en el fondo */
     body::before {
       content: "";
       position: fixed;
@@ -82,12 +83,58 @@
       color: #000000;
       border-color: #ffffff;
     }
+
+    /* Barra de herramientas (Filtros y Búsqueda) */
+    .toolbar {
+      max-width: 1000px;
+      margin: 15px auto 0 auto;
+      padding: 0 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    .search-input {
+      background: #141414;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.9em;
+      flex: 1 1 200px;
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: #666;
+    }
+    .filter-select {
+      background: #141414;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.85em;
+      cursor: pointer;
+    }
+    .filter-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85em;
+      color: #aaa;
+      cursor: pointer;
+      user-select: none;
+    }
+
     .container {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 14px;
       max-width: 1000px;
-      margin: 20px auto;
+      margin: 15px auto;
       padding: 0 15px;
       position: relative;
       z-index: 1;
@@ -163,76 +210,9 @@
     </nav>
   </header>
 
-  <div id="catalog" class="container">
-    <div class="loading">Cargando productos en vivo...</div>
-  </div>
-
-  <script>
-    var API_URL = 'https://script.google.com/macros/s/AKfycbx-GaEgu6_oVhr2rd-CchSSXYWOZkd_w2wWgGCaaTRHirHLeomdBYFKZTQ74sTVcX2YkQ/exec';
-
-    function renderProducts(lista) {
-      var container = document.getElementById('catalog');
-      if (!lista || lista.length === 0) {
-        container.innerHTML = '<div class="loading">No hay productos disponibles en esta categoría.</div>';
-        return;
-      }
-
-      var html = '';
-      for (var i = 0; i < lista.length; i++) {
-        var p = lista[i];
-        var statusClass = p.disponible ? 'in-stock' : 'out-stock';
-        var statusText = p.disponible ? 'Disponible' : 'Sin Stock';
-        var precioTexto = p.precio ? '$' + Number(p.precio).toLocaleString('es-AR') : 'Consultar';
-        var wsLink = 'https://wa.me/5491123610813?text=' + encodeURIComponent('Hola! Me interesa ' + p.modelo);
-
-        html += '<div class="card">' +
-                  '<div>' +
-                    '<div class="title">' + p.modelo + '</div>' +
-                    '<div class="price">' + precioTexto + '</div>' +
-                    '<div class="status ' + statusClass + '">' + statusText + '</div>' +
-                  '</div>' +
-                  (p.disponible ? '<a href="' + wsLink + '" target="_blank" class="btn-ws">Pedir por WhatsApp</a>' : '') +
-                '</div>';
-      }
-      container.innerHTML = html;
-    }
-
-    function loadCategory(cat) {
-      var btnG = document.getElementById('btn-gorras');
-      var btnR = document.getElementById('btn-remeras');
-
-      if (cat === 'GORRAS') {
-        btnG.classList.add('active');
-        btnR.classList.remove('active');
-      } else {
-        btnR.classList.add('active');
-        btnG.classList.remove('active');
-      }
-
-      document.getElementById('catalog').innerHTML = '<div class="loading">Cargando ' + cat.toLowerCase() + '...</div>';
-
-      var cbName = 'cb_' + Date.now();
-      window[cbName] = function(res) {
-        if (res && Array.isArray(res)) {
-          renderProducts(res);
-        } else {
-          document.getElementById('catalog').innerHTML = '<div class="loading">No se pudieron obtener los productos.</div>';
-        }
-        delete window[cbName];
-        var s = document.getElementById(cbName);
-        if (s && s.parentNode) s.parentNode.removeChild(s);
-      };
-
-      var script = document.createElement('script');
-      script.id = cbName;
-      script.src = API_URL + '?category=' + encodeURIComponent(cat) + '&callback=' + cbName;
-      script.onerror = function() {
-        document.getElementById('catalog').innerHTML = '<div class="loading">Error al conectar con la planilla de datos.</div>';
-      };
-      document.body.appendChild(script);
-    }
-
-    loadCategory('GORRAS');
-  </script>
-</body>
-</html>
+  <!-- Filtros -->
+  <div class="toolbar">
+    <input type="text" id="search-box" class="search-input" placeholder="Buscar modelo..." oninput="applyFilters()">
+    
+    <select id="sort-select" class="filter-select" onchange="applyFilters()">
+      <option value="default">Orden por defecto</option>
