@@ -17,5 +17,340 @@
       min-height: 100vh;
     }
 
+    /* Marca de agua fija en el fondo */
     body::before {
       content: "";
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80vw;
+      max-width: 420px;
+      height: 80vw;
+      max-height: 420px;
+      background-image: url('https://lh3.googleusercontent.com/d/1MTXUyzpXlZ3_ZqjanHdG8RTrHTJm-MBh');
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      opacity: 0.08;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header {
+      background-color: #000000;
+      padding: 15px 10px 12px 10px;
+      text-align: center;
+      border-bottom: 1px solid #222;
+      width: 100%;
+      position: relative;
+      z-index: 1;
+    }
+    .logo-container {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .logo {
+      max-height: 85px;
+      width: auto;
+      max-width: 80vw;
+      object-fit: contain;
+      display: block;
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 5px;
+    }
+    .nav-btn {
+      background: #1a1a1a;
+      color: #888;
+      border: 1px solid #333;
+      padding: 8px 24px;
+      border-radius: 20px;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 0.85em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .nav-btn.active, .nav-btn:hover {
+      background: #ffffff;
+      color: #000000;
+      border-color: #ffffff;
+    }
+
+    /* Barra de herramientas */
+    .toolbar {
+      max-width: 1000px;
+      margin: 15px auto 0 auto;
+      padding: 0 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    .search-input {
+      background: #141414;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.9em;
+      flex: 1 1 200px;
+    }
+    .search-input:focus { outline: none; border-color: #666; }
+    .filter-select {
+      background: #141414;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.85em;
+      cursor: pointer;
+    }
+    .filter-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85em;
+      color: #aaa;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+      max-width: 1000px;
+      margin: 15px auto;
+      padding: 0 15px;
+      position: relative;
+      z-index: 1;
+    }
+    .card {
+      background: rgba(20, 20, 20, 0.88);
+      backdrop-filter: blur(4px);
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover { transform: translateY(-2px); border-color: #444; }
+    .title {
+      font-weight: 700;
+      font-size: 0.95em;
+      margin-bottom: 8px;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .price {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #4caf50;
+      margin-bottom: 10px;
+    }
+    .status {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.75em;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 12px;
+      width: fit-content;
+    }
+    .in-stock { background-color: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.3); }
+    .out-stock { background-color: rgba(244, 67, 54, 0.15); color: #f44336; border: 1px solid rgba(244, 67, 54, 0.3); }
+    .btn-ws {
+      display: block;
+      text-align: center;
+      background-color: #25d366;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 9px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 0.85em;
+      transition: background-color 0.2s;
+    }
+    .btn-ws:hover { background-color: #1ebd56; }
+    .loading { text-align: center; color: #888; margin-top: 40px; font-size: 1em; grid-column: 1 / -1; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-container">
+      <img src="https://lh3.googleusercontent.com/d/1_LgUzOOjiZpsB0xAQB_VwP06Qdctmv7R" alt="ICON Indumentaria & Accesorios" class="logo" onerror="this.style.display='none'; document.getElementById('alt-title').style.display='block';">
+      <h1 id="alt-title" style="display:none; margin:0; letter-spacing:2px; font-size: 1.6em;">ICON</h1>
+    </div>
+    
+    <nav>
+      <button class="nav-btn active" id="btn-gorras" onclick="loadCategory('GORRAS')">Gorras</button>
+      <button class="nav-btn" id="btn-remeras" onclick="loadCategory('REMERAS')">Remeras</button>
+    </nav>
+  </header>
+
+  <div class="toolbar">
+    <input type="text" id="search-box" class="search-input" placeholder="Buscar modelo..." oninput="applyFilters()">
+    
+    <select id="sort-select" class="filter-select" onchange="applyFilters()">
+      <option value="default">Orden por defecto</option>
+      <option value="asc">Precio: Menor a Mayor</option>
+      <option value="desc">Precio: Mayor a Menor</option>
+    </select>
+
+    <label class="filter-checkbox">
+      <input type="checkbox" id="only-stock" onchange="applyFilters()"> Solo con Stock
+    </label>
+  </div>
+
+  <div id="catalog" class="container">
+    <div class="loading">Cargando productos en vivo...</div>
+  </div>
+
+  <script>
+    // Tu ID de Google Sheets integrado
+    var SHEET_ID = '1Qe2LG3pDsM536gB0ue44uYTaruYri9FwGIYylcoW7rU';
+    var rawProducts = [];
+
+    // Datos iniciales inmediatos
+    var fallbackData = {
+      'GORRAS': [
+        { modelo: 'GORRA NY NEGRA', precio: 81840, disponible: true },
+        { modelo: 'GORRA P GRIS', precio: 78120, disponible: true },
+        { modelo: 'GORRA LA', precio: 74400, disponible: true },
+        { modelo: 'GORRA JORDAN FRANJA ROJA', precio: 74400, disponible: true },
+        { modelo: 'JORDAN CHAPITA', precio: 65100, disponible: true },
+        { modelo: 'JORDAN CLASICA', precio: 65100, disponible: true },
+        { modelo: 'CLUB NIKE', precio: 78120, disponible: true },
+        { modelo: 'NIKE B NEGRA', precio: 66960, disponible: true },
+        { modelo: 'WARRIORS NIKE', precio: 66960, disponible: true },
+        { modelo: 'JORDAN CLASICA PLANA', precio: 78120, disponible: false },
+        { modelo: 'GORRA CELTIC', precio: 66960, disponible: false },
+        { modelo: 'NIKE CHAPITA', precio: 65100, disponible: false },
+        { modelo: 'LOS ANGELES', precio: 81840, disponible: false },
+        { modelo: 'T ROJA', precio: 78120, disponible: false }
+      ],
+      'REMERAS': []
+    };
+
+    function applyFilters() {
+      var searchVal = document.getElementById('search-box').value.toLowerCase().trim();
+      var sortVal = document.getElementById('sort-select').value;
+      var onlyStockVal = document.getElementById('only-stock').checked;
+
+      var filtered = rawProducts.filter(function(p) {
+        var matchesText = p.modelo.toLowerCase().includes(searchVal);
+        var matchesStock = onlyStockVal ? p.disponible : true;
+        return matchesText && matchesStock;
+      });
+
+      if (sortVal === 'asc') {
+        filtered.sort(function(a, b) { return Number(a.precio) - Number(b.precio); });
+      } else if (sortVal === 'desc') {
+        filtered.sort(function(a, b) { return Number(b.precio) - Number(a.precio); });
+      }
+
+      renderProducts(filtered);
+    }
+
+    function renderProducts(lista) {
+      var container = document.getElementById('catalog');
+      if (!lista || lista.length === 0) {
+        container.innerHTML = '<div class="loading">No se encontraron productos con estos filtros.</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < lista.length; i++) {
+        var p = lista[i];
+        var statusClass = p.disponible ? 'in-stock' : 'out-stock';
+        var statusText = p.disponible ? 'Disponible' : 'Sin Stock';
+        var precioTexto = p.precio ? '$' + Number(p.precio).toLocaleString('es-AR') : 'Consultar';
+        var wsLink = 'https://wa.me/5491123610813?text=' + encodeURIComponent('Hola! Me interesa ' + p.modelo);
+
+        html += '<div class="card">' +
+                  '<div>' +
+                    '<div class="title">' + p.modelo + '</div>' +
+                    '<div class="price">' + precioTexto + '</div>' +
+                    '<div class="status ' + statusClass + '">' + statusText + '</div>' +
+                  '</div>' +
+                  (p.disponible ? '<a href="' + wsLink + '" target="_blank" class="btn-ws">Pedir por WhatsApp</a>' : '') +
+                '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function loadCategory(sheetName) {
+      var btnG = document.getElementById('btn-gorras');
+      var btnR = document.getElementById('btn-remeras');
+
+      if (sheetName === 'GORRAS') {
+        btnG.classList.add('active');
+        btnR.classList.remove('active');
+      } else {
+        btnR.classList.add('active');
+        btnG.classList.remove('active');
+      }
+
+      // Cargar respaldo inmediato mientras consulta
+      rawProducts = fallbackData[sheetName] || [];
+      applyFilters();
+
+      // Consulta directa Query API a Google Sheets (sin pasar por Apps Script)
+      var query = encodeURIComponent("SELECT A, F, G WHERE A IS NOT NULL OFFSET 2");
+      var url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?sheet=" + encodeURIComponent(sheetName) + "&tq=" + query + "&tqx=out:json";
+
+      fetch(url)
+        .then(function(res) { return res.text(); })
+        .then(function(text) {
+          var match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?/);
+          if (match && match[1]) {
+            var data = JSON.parse(match[1]);
+            var rows = data.table.rows;
+            var list = [];
+
+            for (var i = 0; i < rows.length; i++) {
+              var c = rows[i].c;
+              var modelo = c[0] ? c[0].v : null;
+              var precio = c[1] ? c[1].v : 0;
+              var stock = c[2] ? c[2].v : false;
+
+              if (modelo && !modelo.toString().toUpperCase().startsWith('HTTP')) {
+                list.push({
+                  modelo: modelo.toString().trim(),
+                  precio: precio,
+                  disponible: (stock === true || stock.toString().toUpperCase() === "TRUE")
+                });
+              }
+            }
+
+            if (list.length > 0) {
+              rawProducts = list;
+              applyFilters();
+            }
+          }
+        })
+        .catch(function(err) {
+          // Si no hay red, mantiene los datos precargados limpiamente
+        });
+    }
+
+    loadCategory('GORRAS');
+  </script>
+</body>
+</html>
