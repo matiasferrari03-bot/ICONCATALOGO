@@ -84,7 +84,7 @@
       border-color: #ffffff;
     }
 
-    /* Barra de Herramientas */
+    /* Barra de herramientas */
     .toolbar {
       max-width: 1000px;
       margin: 15px auto 0 auto;
@@ -219,7 +219,7 @@
   </div>
 
   <div id="catalog" class="container">
-    <div class="loading">Cargando productos en vivo...</div>
+    <div class="loading">Cargando catálogo en vivo...</div>
   </div>
 
   <script>
@@ -249,7 +249,7 @@
     function renderProducts(lista) {
       var container = document.getElementById('catalog');
       if (!lista || lista.length === 0) {
-        container.innerHTML = '<div class="loading">No se encontraron productos disponibles.</div>';
+        container.innerHTML = '<div class="loading">No hay productos disponibles en esta categoría.</div>';
         return;
       }
 
@@ -304,44 +304,49 @@
         btnG.classList.remove('active');
       }
 
-      document.getElementById('catalog').innerHTML = '<div class="loading">Cargando ' + sheetName.toLowerCase() + '...</div>';
+      document.getElementById('catalog').innerHTML = '<div class="loading">Sincronizando ' + sheetName.toLowerCase() + '...</div>';
 
-      // Consulta limpia vía CSV directo ignorando caché
-      var csvUrl = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(sheetName) + "&_nocache=" + Date.now();
+      // Consulta en vivo a la solapa especificada (GORRAS o REMERAS)
+      var csvUrl = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(sheetName) + "&tq=" + encodeURIComponent("SELECT A, F, G WHERE A IS NOT NULL") + "&_t=" + Date.now();
 
-      fetch(csvUrl)
+      fetch(csvUrl, { cache: "no-store" })
         .then(function(res) { return res.text(); })
         .then(function(text) {
           var lines = text.split(/\r\n|\n/);
           var list = [];
 
-          // Saltear las primeras 2 filas de encabezado (Offset 2)
-          for (var i = 2; i < lines.length; i++) {
+          for (var i = 0; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
             var cols = parseCSVLine(lines[i]);
 
             var modelo = cols[0] ? cols[0].replace(/^"|"$/g, '').trim() : '';
-            var precioRaw = cols[5] ? cols[5].replace(/^"|"$/g, '').trim() : '0';
-            var stockRaw = cols[6] ? cols[6].replace(/^"|"$/g, '').trim().toUpperCase() : 'FALSE';
+            var precioRaw = cols[1] ? cols[1].replace(/^"|"$/g, '').trim() : '0';
+            var stockRaw = cols[2] ? cols[2].replace(/^"|"$/g, '').trim().toUpperCase() : 'FALSE';
 
-            // Limpieza de precios con formato moneda
-            var precioNum = Number(precioRaw.replace(/[^0-9]/g, '')) || 0;
-
-            if (modelo && !modelo.toUpperCase().startsWith('HTTP') && !modelo.toUpperCase().includes('IMAGEN')) {
-              var esDisponible = (stockRaw === 'TRUE' || stockRaw === 'VERDADERO' || stockRaw === 'SI' || stockRaw === '1');
-              list.push({
-                modelo: modelo,
-                precio: precioNum,
-                disponible: esDisponible
-              });
+            // Filtrar títulos y encabezados
+            if (!modelo || 
+                modelo.toUpperCase().startsWith('HTTP') || 
+                modelo.toUpperCase().includes('MODELO') || 
+                modelo.toUpperCase().includes('STOCK DE') ||
+                modelo.toUpperCase().includes('IMAGEN Y MODELO')) {
+              continue;
             }
+
+            var precioNum = Number(precioRaw.replace(/[^0-9]/g, '')) || 0;
+            var esDisponible = (stockRaw === 'TRUE' || stockRaw === 'VERDADERO' || stockRaw === 'SI' || stockRaw === '1');
+
+            list.push({
+              modelo: modelo,
+              precio: precioNum,
+              disponible: esDisponible
+            });
           }
 
           rawProducts = list;
           applyFilters();
         })
         .catch(function(err) {
-          document.getElementById('catalog').innerHTML = '<div class="loading">No se pudieron cargar los datos en vivo.</div>';
+          document.getElementById('catalog').innerHTML = '<div class="loading">Error al cargar la categoría ' + sheetName.toLowerCase() + '.</div>';
         });
     }
 
