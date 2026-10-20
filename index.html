@@ -84,7 +84,7 @@
       border-color: #ffffff;
     }
 
-    /* Barra de herramientas */
+    /* Barra de Herramientas */
     .toolbar {
       max-width: 1000px;
       margin: 15px auto 0 auto;
@@ -223,30 +223,8 @@
   </div>
 
   <script>
-    // Tu ID de Google Sheets integrado
     var SHEET_ID = '1Qe2LG3pDsM536gB0ue44uYTaruYri9FwGIYylcoW7rU';
     var rawProducts = [];
-
-    // Datos iniciales inmediatos
-    var fallbackData = {
-      'GORRAS': [
-        { modelo: 'GORRA NY NEGRA', precio: 81840, disponible: true },
-        { modelo: 'GORRA P GRIS', precio: 78120, disponible: true },
-        { modelo: 'GORRA LA', precio: 74400, disponible: true },
-        { modelo: 'GORRA JORDAN FRANJA ROJA', precio: 74400, disponible: true },
-        { modelo: 'JORDAN CHAPITA', precio: 65100, disponible: true },
-        { modelo: 'JORDAN CLASICA', precio: 65100, disponible: true },
-        { modelo: 'CLUB NIKE', precio: 78120, disponible: true },
-        { modelo: 'NIKE B NEGRA', precio: 66960, disponible: true },
-        { modelo: 'WARRIORS NIKE', precio: 66960, disponible: true },
-        { modelo: 'JORDAN CLASICA PLANA', precio: 78120, disponible: false },
-        { modelo: 'GORRA CELTIC', precio: 66960, disponible: false },
-        { modelo: 'NIKE CHAPITA', precio: 65100, disponible: false },
-        { modelo: 'LOS ANGELES', precio: 81840, disponible: false },
-        { modelo: 'T ROJA', precio: 78120, disponible: false }
-      ],
-      'REMERAS': []
-    };
 
     function applyFilters() {
       var searchVal = document.getElementById('search-box').value.toLowerCase().trim();
@@ -271,7 +249,7 @@
     function renderProducts(lista) {
       var container = document.getElementById('catalog');
       if (!lista || lista.length === 0) {
-        container.innerHTML = '<div class="loading">No se encontraron productos con estos filtros.</div>';
+        container.innerHTML = '<div class="loading">No se encontraron productos disponibles.</div>';
         return;
       }
 
@@ -295,6 +273,25 @@
       container.innerHTML = html;
     }
 
+    function parseCSVLine(line) {
+      var result = [];
+      var cur = '';
+      var inQuotes = false;
+      for (var i = 0; i < line.length; i++) {
+        var c = line[i];
+        if (c === '"') {
+          inQuotes = !inQuotes;
+        } else if (c === ',' && !inQuotes) {
+          result.push(cur);
+          cur = '';
+        } else {
+          cur += c;
+        }
+      }
+      result.push(cur);
+      return result;
+    }
+
     function loadCategory(sheetName) {
       var btnG = document.getElementById('btn-gorras');
       var btnR = document.getElementById('btn-remeras');
@@ -307,46 +304,44 @@
         btnG.classList.remove('active');
       }
 
-      // Cargar respaldo inmediato mientras consulta
-      rawProducts = fallbackData[sheetName] || [];
-      applyFilters();
+      document.getElementById('catalog').innerHTML = '<div class="loading">Cargando ' + sheetName.toLowerCase() + '...</div>';
 
-      // Consulta directa Query API a Google Sheets (sin pasar por Apps Script)
-      var query = encodeURIComponent("SELECT A, F, G WHERE A IS NOT NULL OFFSET 2");
-      var url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?sheet=" + encodeURIComponent(sheetName) + "&tq=" + query + "&tqx=out:json";
+      // Consulta limpia vía CSV directo ignorando caché
+      var csvUrl = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(sheetName) + "&_nocache=" + Date.now();
 
-      fetch(url)
+      fetch(csvUrl)
         .then(function(res) { return res.text(); })
         .then(function(text) {
-          var match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?/);
-          if (match && match[1]) {
-            var data = JSON.parse(match[1]);
-            var rows = data.table.rows;
-            var list = [];
+          var lines = text.split(/\r\n|\n/);
+          var list = [];
 
-            for (var i = 0; i < rows.length; i++) {
-              var c = rows[i].c;
-              var modelo = c[0] ? c[0].v : null;
-              var precio = c[1] ? c[1].v : 0;
-              var stock = c[2] ? c[2].v : false;
+          // Saltear las primeras 2 filas de encabezado (Offset 2)
+          for (var i = 2; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            var cols = parseCSVLine(lines[i]);
 
-              if (modelo && !modelo.toString().toUpperCase().startsWith('HTTP')) {
-                list.push({
-                  modelo: modelo.toString().trim(),
-                  precio: precio,
-                  disponible: (stock === true || stock.toString().toUpperCase() === "TRUE")
-                });
-              }
-            }
+            var modelo = cols[0] ? cols[0].replace(/^"|"$/g, '').trim() : '';
+            var precioRaw = cols[5] ? cols[5].replace(/^"|"$/g, '').trim() : '0';
+            var stockRaw = cols[6] ? cols[6].replace(/^"|"$/g, '').trim().toUpperCase() : 'FALSE';
 
-            if (list.length > 0) {
-              rawProducts = list;
-              applyFilters();
+            // Limpieza de precios con formato moneda
+            var precioNum = Number(precioRaw.replace(/[^0-9]/g, '')) || 0;
+
+            if (modelo && !modelo.toUpperCase().startsWith('HTTP') && !modelo.toUpperCase().includes('IMAGEN')) {
+              var esDisponible = (stockRaw === 'TRUE' || stockRaw === 'VERDADERO' || stockRaw === 'SI' || stockRaw === '1');
+              list.push({
+                modelo: modelo,
+                precio: precioNum,
+                disponible: esDisponible
+              });
             }
           }
+
+          rawProducts = list;
+          applyFilters();
         })
         .catch(function(err) {
-          // Si no hay red, mantiene los datos precargados limpiamente
+          document.getElementById('catalog').innerHTML = '<div class="loading">No se pudieron cargar los datos en vivo.</div>';
         });
     }
 
