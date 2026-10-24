@@ -127,8 +127,8 @@
 
     .container {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
       max-width: 1000px;
       margin: 15px auto;
       padding: 0 15px;
@@ -140,13 +140,44 @@
       backdrop-filter: blur(4px);
       border: 1px solid #222;
       border-radius: 12px;
-      padding: 14px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       transition: transform 0.2s, border-color 0.2s;
     }
     .card:hover { transform: translateY(-2px); border-color: #444; }
+
+    /* Contenedor de Imagen de Producto */
+    .img-wrap {
+      width: 100%;
+      height: 170px;
+      background: #161616;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+    .card:hover .img-wrap img {
+      transform: scale(1.04);
+    }
+    .img-wrap .placeholder-logo {
+      width: 50%;
+      height: auto;
+      opacity: 0.35;
+      object-fit: contain;
+    }
+
     .title {
       font-weight: 700;
       font-size: 0.95em;
@@ -232,52 +263,25 @@
   </div>
 
   <div id="catalog" class="container">
-    <div class="loading">Cargando catálogo en vivo...</div>
+    <div class="loading">Cargando catálogo...</div>
   </div>
 
   <script>
     var SHEET_ID = '1Qe2LG3pDsM536gB0ue44uYTaruYri9FwGIYylcoW7rU';
+    var DEFAULT_LOGO = 'https://lh3.googleusercontent.com/d/1_LgUzOOjiZpsB0xAQB_VwP06Qdctmv7R';
     var currentCategory = 'GORRAS';
     var rawProducts = [];
 
-    // Base inicial inmediata para que la pantalla NUNCA se quede en negro
-    var fallbackData = {
-      'GORRAS': [
-        { modelo: 'GORRA NY NEGRA', precio: 81840, disponible: true, talle: '' },
-        { modelo: 'GORRA P GRIS', precio: 78120, disponible: true, talle: '' },
-        { modelo: 'GORRA LA', precio: 74400, disponible: true, talle: '' },
-        { modelo: 'GORRA JORDAN FRANJA ROJA', precio: 74400, disponible: true, talle: '' },
-        { modelo: 'JORDAN CHAPITA', precio: 65100, disponible: true, talle: '' },
-        { modelo: 'JORDAN CLASICA', precio: 65100, disponible: true, talle: '' },
-        { modelo: 'CLUB NIKE', precio: 78120, disponible: true, talle: '' },
-        { modelo: 'NIKE B NEGRA', precio: 66960, disponible: true, talle: '' },
-        { modelo: 'WARRIORS NIKE', precio: 66960, disponible: true, talle: '' },
-        { modelo: 'JORDAN CLASICA PLANA', precio: 78120, disponible: false, talle: '' },
-        { modelo: 'GORRA CELTIC', precio: 66960, disponible: false, talle: '' },
-        { modelo: 'NIKE CHAPITA', precio: 65100, disponible: false, talle: '' },
-        { modelo: 'LOS ANGELES', precio: 81840, disponible: false, talle: '' },
-        { modelo: 'T ROJA', precio: 78120, disponible: false, talle: '' }
-      ],
-      'REMERAS': [
-        { modelo: 'REMRA FLYG JORDAN BLANCA', precio: 55000, disponible: true, talle: 'M' },
-        { modelo: 'REMRA FLYG NEGRA', precio: 55000, disponible: true, talle: 'M' },
-        { modelo: 'REMRA BRASIL', precio: 59000, disponible: true, talle: 'M' },
-        { modelo: 'REMRA FRANCIA', precio: 61000, disponible: true, talle: 'M' },
-        { modelo: 'REMRA BLANJA AJ1', precio: 63000, disponible: false, talle: 'M' },
-        { modelo: 'JORDAN AZUL', precio: 66000, disponible: false, talle: 'M' },
-        { modelo: 'REMRA JORDAN NEGRA CLASICA', precio: 70000, disponible: false, talle: 'M' },
-        { modelo: 'REMRA CLASICA GRIS JORDAN', precio: 70000, disponible: false, talle: 'M' },
-        { modelo: 'REMRA JORDAN BROONKLIN', precio: 63000, disponible: false, talle: 'M' },
-        { modelo: 'REMERA NIKE AIR MAX', precio: 55000, disponible: false, talle: 'M' },
-        { modelo: 'REMRA BRRON TALLE L', precio: 76000, disponible: false, talle: 'M' },
-        { modelo: 'REMERA LACOSTE', precio: 82000, disponible: true, talle: 'M' }
-      ],
-      'ACCESORIOS': [
-        { modelo: 'OJOTA LACOSTE', precio: 69000, disponible: true, talle: '' },
-        { modelo: 'COLGANTE JORDAN', precio: 33000, disponible: true, talle: '' },
-        { modelo: 'BOLSO JORDAN AIR', precio: 65000, disponible: true, talle: '' }
-      ]
-    };
+    // Convierte URLs de Drive al formato visualizable directo
+    function formatImageUrl(url) {
+      if (!url) return null;
+      url = url.trim();
+      var driveMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+      if (driveMatch && driveMatch[1]) {
+        return 'https://lh3.googleusercontent.com/d/' + driveMatch[1];
+      }
+      return url.startsWith('http') ? url : null;
+    }
 
     function applyFilters() {
       var searchVal = document.getElementById('search-box').value.toLowerCase().trim();
@@ -312,13 +316,18 @@
         var statusClass = p.disponible ? 'in-stock' : 'out-stock';
         var statusText = p.disponible ? 'Disponible' : 'Sin Stock';
         var precioTexto = p.precio ? '$' + Number(p.precio).toLocaleString('es-AR') : 'Consultar';
-        
         var talleHtml = p.talle ? '<div class="talle-badge">Talle: ' + p.talle + '</div>' : '';
         var textWs = 'Hola! Me interesa ' + p.modelo + (p.talle ? ' (Talle ' + p.talle + ')' : '');
         var wsLink = 'https://wa.me/5491123610813?text=' + encodeURIComponent(textWs);
 
+        // Si tiene imagen la muestra; si falla o no tiene, coloca el logo
+        var imgHtml = p.imagen 
+          ? '<img src="' + p.imagen + '" alt="' + p.modelo + '" onerror="this.onerror=null; this.src=\'' + DEFAULT_LOGO + '\'; this.className=\'placeholder-logo\';">'
+          : '<img src="' + DEFAULT_LOGO + '" alt="ICON" class="placeholder-logo">';
+
         html += '<div class="card">' +
                   '<div>' +
+                    '<div class="img-wrap">' + imgHtml + '</div>' +
                     '<div class="title">' + p.modelo + '</div>' +
                     talleHtml +
                     '<div class="price">' + precioTexto + '</div>' +
@@ -357,11 +366,8 @@
       var activeBtn = document.getElementById('btn-' + sheetName.toLowerCase());
       if (activeBtn) activeBtn.classList.add('active');
 
-      // 1. Mostrar de inmediato los productos sin demora
-      rawProducts = fallbackData[sheetName] || [];
-      applyFilters();
+      document.getElementById('catalog').innerHTML = '<div class="loading">Sincronizando ' + sheetName.toLowerCase() + '...</div>';
 
-      // 2. Traer en segundo plano las actualizaciones de Google Sheets
       var csvUrl = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(sheetName) + "&_t=" + Date.now();
 
       fetch(csvUrl, { cache: "no-store" })
@@ -374,21 +380,25 @@
             if (!lines[i].trim()) continue;
             var cols = parseCSVLine(lines[i]);
 
-            var modelo = cols[0] ? cols[0].replace(/^"|"$/g, '').trim() : '';
+            var colA = cols[0] ? cols[0].replace(/^"|"$/g, '').trim() : '';
             var precioRaw = cols[5] ? cols[5].replace(/^"|"$/g, '').trim() : '0';
             var stockRaw = cols[6] ? cols[6].replace(/^"|"$/g, '').trim().toUpperCase() : 'FALSE';
             
-            // Solo toma la columna H (Índice 7) para REMERAS
             var talleRaw = '';
             if (sheetName === 'REMERAS' && cols[7]) {
               talleRaw = cols[7].replace(/^"|"$/g, '').trim();
             }
 
-            if (!modelo || 
-                modelo.toUpperCase().startsWith('HTTP') || 
-                modelo.toUpperCase().includes('MODELO') || 
-                modelo.toUpperCase().includes('STOCK DE') ||
-                modelo.toUpperCase().includes('IMAGEN Y MODELO')) {
+            // Busca si hay URL de foto en la Columna I (índice 8) o dentro de la Columna A
+            var imgUrl = null;
+            if (cols[8]) {
+              imgUrl = formatImageUrl(cols[8].replace(/^"|"$/g, ''));
+            }
+
+            if (!colA || 
+                colA.toUpperCase().includes('MODELO') || 
+                colA.toUpperCase().includes('STOCK DE') ||
+                colA.toUpperCase().includes('IMAGEN Y MODELO')) {
               continue;
             }
 
@@ -396,20 +406,21 @@
             var esDisponible = (stockRaw === 'TRUE' || stockRaw === 'VERDADERO' || stockRaw === 'SI' || stockRaw === '1');
 
             list.push({
-              modelo: modelo,
+              modelo: colA,
               precio: precioNum,
               disponible: esDisponible,
-              talle: talleRaw
+              talle: talleRaw,
+              imagen: imgUrl
             });
           }
 
-          if (list.length > 0 && currentCategory === sheetName) {
+          if (currentCategory === sheetName) {
             rawProducts = list;
             applyFilters();
           }
         })
         .catch(function(err) {
-          // Si hay algún problema momentáneo con internet, mantiene en pantalla los datos de respaldo
+          document.getElementById('catalog').innerHTML = '<div class="loading">Error al conectar con la planilla.</div>';
         });
     }
 
