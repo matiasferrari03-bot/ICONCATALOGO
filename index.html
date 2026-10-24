@@ -148,7 +148,6 @@
     }
     .card:hover { transform: translateY(-2px); border-color: #444; }
 
-    /* Contenedor de Imagen de Producto */
     .img-wrap {
       width: 100%;
       height: 170px;
@@ -263,24 +262,41 @@
   </div>
 
   <div id="catalog" class="container">
-    <div class="loading">Cargando catálogo...</div>
+    <div class="loading">Cargando catálogo en vivo...</div>
   </div>
 
   <script>
     var SHEET_ID = '1Qe2LG3pDsM536gB0ue44uYTaruYri9FwGIYylcoW7rU';
+    var APPSHEET_APP_ID = 'ICONSTOCK-663975856';
     var DEFAULT_LOGO = 'https://lh3.googleusercontent.com/d/1_LgUzOOjiZpsB0xAQB_VwP06Qdctmv7R';
     var currentCategory = 'GORRAS';
     var rawProducts = [];
 
-    // Convierte URLs de Drive al formato visualizable directo
-    function formatImageUrl(url) {
-      if (!url) return null;
-      url = url.trim();
-      var driveMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+    // Convierte tanto links pegados de Drive como rutas automáticas de AppSheet
+    function formatImageUrl(val, sheetName) {
+      if (!val) return null;
+      val = val.trim();
+
+      // Si es un enlace pegado directamente de Google Drive
+      var driveMatch = val.match(/\/d\/([a-zA-Z0-9_-]+)/) || val.match(/id=([a-zA-Z0-9_-]+)/);
       if (driveMatch && driveMatch[1]) {
         return 'https://lh3.googleusercontent.com/d/' + driveMatch[1];
       }
-      return url.startsWith('http') ? url : null;
+
+      // Si es una URL web completa estándar
+      if (val.startsWith('http://') || val.startsWith('https://')) {
+        return val;
+      }
+
+      // Si fue generada automáticamente por AppSheet (ej: REMERAS_Images/REMERA PRUEBA...)
+      if (val.includes('/') || val.endsWith('.jpg') || val.endsWith('.png') || val.endsWith('.jpeg')) {
+        return 'https://www.appsheet.com/template/gettablefileurl?appName=' + 
+               encodeURIComponent(APPSHEET_APP_ID) + 
+               '&tableName=' + encodeURIComponent(sheetName) + 
+               '&fileName=' + encodeURIComponent(val);
+      }
+
+      return null;
     }
 
     function applyFilters() {
@@ -320,7 +336,6 @@
         var textWs = 'Hola! Me interesa ' + p.modelo + (p.talle ? ' (Talle ' + p.talle + ')' : '');
         var wsLink = 'https://wa.me/5491123610813?text=' + encodeURIComponent(textWs);
 
-        // Si tiene imagen la muestra; si falla o no tiene, coloca el logo
         var imgHtml = p.imagen 
           ? '<img src="' + p.imagen + '" alt="' + p.modelo + '" onerror="this.onerror=null; this.src=\'' + DEFAULT_LOGO + '\'; this.className=\'placeholder-logo\';">'
           : '<img src="' + DEFAULT_LOGO + '" alt="ICON" class="placeholder-logo">';
@@ -389,15 +404,13 @@
               talleRaw = cols[7].replace(/^"|"$/g, '').trim();
             }
 
-            // Busca si hay URL de foto en la Columna I (índice 8) o dentro de la Columna A
-            var imgUrl = null;
-            if (cols[8]) {
-              imgUrl = formatImageUrl(cols[8].replace(/^"|"$/g, ''));
-            }
+            // Columna I = Índice 8 (Imagen)
+            var imgRaw = cols[8] ? cols[8].replace(/^"|"$/g, '').trim() : '';
+            var imgUrl = formatImageUrl(imgRaw, sheetName);
 
             if (!colA || 
                 colA.toUpperCase().includes('MODELO') || 
-                colA.toUpperCase().includes('STOCK DE') ||
+                colA.toUpperCase().includes('STOCK DE') || 
                 colA.toUpperCase().includes('IMAGEN Y MODELO')) {
               continue;
             }
@@ -420,7 +433,7 @@
           }
         })
         .catch(function(err) {
-          document.getElementById('catalog').innerHTML = '<div class="loading">Error al conectar con la planilla.</div>';
+          document.getElementById('catalog').innerHTML = '<div class="loading">Error al sincronizar con la planilla.</div>';
         });
     }
 
