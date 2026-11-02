@@ -148,7 +148,6 @@
     }
     .card:hover { transform: translateY(-2px); border-color: #444; }
 
-    /* Imagen cuadrada adaptativa */
     .img-wrap {
       width: 100%;
       aspect-ratio: 1 / 1;
@@ -163,14 +162,14 @@
       position: relative;
       user-select: none;
     }
-    .img-wrap img {
+    .img-wrap img.main-photo {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
       transition: transform 0.3s ease;
     }
-    .card:hover .img-wrap img {
+    .card:hover .img-wrap img.main-photo {
       transform: scale(1.04);
     }
     .img-wrap .placeholder-logo {
@@ -180,7 +179,21 @@
       object-fit: contain;
     }
 
-    /* Controles de slider para múltiples imágenes */
+    /* Insignia Cyber Monday sobre la foto */
+    .cyber-badge {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: 32%;
+      max-width: 90px;
+      min-width: 60px;
+      height: auto;
+      z-index: 3;
+      pointer-events: none;
+      filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.7));
+    }
+
+    /* Controles de slider */
     .slide-arrow {
       position: absolute;
       top: 50%;
@@ -244,12 +257,37 @@
       width: fit-content;
       letter-spacing: 0.5px;
     }
-    .price {
-      font-size: 1.2em;
+
+    /* Precios Cyber Monday */
+    .price-container {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .price-old {
+      font-size: 0.95em;
+      font-weight: 600;
+      color: #888888;
+      text-decoration: line-through;
+    }
+    .price-new {
+      font-size: 1.25em;
       font-weight: bold;
       color: #4caf50;
-      margin-bottom: 10px;
     }
+    .discount-pill {
+      background: #8a2be2;
+      color: #ffffff;
+      font-size: 0.68em;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
     .status {
       display: inline-block;
       padding: 3px 8px;
@@ -262,6 +300,7 @@
     }
     .in-stock { background-color: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.3); }
     .out-stock { background-color: rgba(244, 67, 54, 0.15); color: #f44336; border: 1px solid rgba(244, 67, 54, 0.3); }
+    
     .btn-ws {
       display: block;
       text-align: center;
@@ -315,6 +354,7 @@
     var SHEET_ID = '1Qe2LG3pDsM536gB0ue44uYTaruYri9FwGIYylcoW7rU';
     var APPSHEET_APP_ID = 'ICONSTOCK-663975856';
     var DEFAULT_LOGO = 'https://lh3.googleusercontent.com/d/1_LgUzOOjiZpsB0xAQB_VwP06Qdctmv7R';
+    var CYBER_BADGE_IMG = 'cyber-monday.png'; // Ruta relativa al logo en tu repo
     var currentCategory = 'GORRAS';
     var rawProducts = [];
 
@@ -353,9 +393,17 @@
       });
 
       if (sortVal === 'asc') {
-        filtered.sort(function(a, b) { return Number(a.precio) - Number(b.precio); });
+        filtered.sort(function(a, b) { 
+          var pA = a.disponible ? a.precioPromo : a.precio;
+          var pB = b.disponible ? b.precioPromo : b.precio;
+          return Number(pA) - Number(pB); 
+        });
       } else if (sortVal === 'desc') {
-        filtered.sort(function(a, b) { return Number(b.precio) - Number(a.precio); });
+        filtered.sort(function(a, b) { 
+          var pA = a.disponible ? a.precioPromo : a.precio;
+          var pB = b.disponible ? b.precioPromo : b.precio;
+          return Number(pB) - Number(pA); 
+        });
       }
 
       renderProducts(filtered);
@@ -413,11 +461,28 @@
         var originalIndex = rawProducts.indexOf(p);
         var statusClass = p.disponible ? 'in-stock' : 'out-stock';
         var statusText = p.disponible ? 'Disponible' : 'Sin Stock';
-        var precioTexto = p.precio ? '$' + Number(p.precio).toLocaleString('es-AR') : 'Consultar';
         var talleHtml = p.talle ? '<div class="talle-badge">Talle: ' + p.talle + '</div>' : '';
-        var textWs = 'Hola! Me interesa ' + p.modelo + (p.talle ? ' (Talle ' + p.talle + ')' : '');
-        var wsLink = 'https://wa.me/5491123610813?text=' + encodeURIComponent(textWs);
 
+        // Bloque de precios (Descuento 10% solo si está disponible)
+        var priceHtml = '';
+        var textWs = '';
+        if (p.precio && p.precio > 0) {
+          if (p.disponible) {
+            priceHtml = '<div class="price-container">' +
+                          '<span class="price-old">$' + Number(p.precio).toLocaleString('es-AR') + '</span>' +
+                          '<span class="price-new">$' + Number(p.precioPromo).toLocaleString('es-AR') + '</span>' +
+                          '<span class="discount-pill">-10% OFF</span>' +
+                        '</div>';
+            textWs = 'Hola! Me interesa ' + p.modelo + (p.talle ? ' (Talle ' + p.talle + ')' : '') + ' por la promo de Cyber Monday ($' + Number(p.precioPromo).toLocaleString('es-AR') + ')';
+          } else {
+            priceHtml = '<div class="price-container"><span class="price-new" style="color:#aaa;">$' + Number(p.precio).toLocaleString('es-AR') + '</span></div>';
+          }
+        } else {
+          priceHtml = '<div class="price-container"><span class="price-new">Consultar</span></div>';
+          textWs = 'Hola! Me interesa ' + p.modelo + (p.talle ? ' (Talle ' + p.talle + ')' : '');
+        }
+
+        var wsLink = 'https://wa.me/5491123610813?text=' + encodeURIComponent(textWs);
         var hasMultiple = p.imagenes && p.imagenes.length > 1;
         var currentImgSrc = (p.imagenes && p.imagenes.length > 0) ? p.imagenes[p.activeSlide || 0] : DEFAULT_LOGO;
 
@@ -434,18 +499,22 @@
         }
 
         var imgHtml = (p.imagenes && p.imagenes.length > 0)
-          ? '<img id="img-' + originalIndex + '" src="' + currentImgSrc + '" alt="' + p.modelo + '" onerror="this.onerror=null; this.src=\'' + DEFAULT_LOGO + '\'; this.className=\'placeholder-logo\';">'
+          ? '<img id="img-' + originalIndex + '" src="' + currentImgSrc + '" alt="' + p.modelo + '" class="main-photo" onerror="this.onerror=null; this.src=\'' + DEFAULT_LOGO + '\'; this.className=\'placeholder-logo\';">'
           : '<img src="' + DEFAULT_LOGO + '" alt="ICON" class="placeholder-logo">';
+
+        // Logo Cyber Monday
+        var badgeHtml = '<img src="' + CYBER_BADGE_IMG + '" alt="Cyber Monday" class="cyber-badge" onerror="this.style.display=\'none\';">';
 
         html += '<div class="card">' +
                   '<div>' +
                     '<div class="img-wrap">' +
                       imgHtml +
+                      badgeHtml +
                       controlsHtml +
                     '</div>' +
                     '<div class="title">' + p.modelo + '</div>' +
                     talleHtml +
-                    '<div class="price">' + precioTexto + '</div>' +
+                    priceHtml +
                     '<div class="status ' + statusClass + '">' + statusText + '</div>' +
                   '</div>' +
                   (p.disponible ? '<a href="' + wsLink + '" target="_blank" class="btn-ws">Pedir por WhatsApp</a>' : '') +
@@ -524,11 +593,13 @@
             }
 
             var precioNum = Number(precioRaw.replace(/[^0-9]/g, '')) || 0;
+            var precioConDescuento = Math.round(precioNum * 0.90);
             var esDisponible = (stockRaw === 'TRUE' || stockRaw === 'VERDADERO' || stockRaw === 'SI' || stockRaw === '1');
 
             list.push({
               modelo: colA,
               precio: precioNum,
+              precioPromo: precioConDescuento,
               disponible: esDisponible,
               talle: talleRaw,
               imagenes: imagenesValidas,
